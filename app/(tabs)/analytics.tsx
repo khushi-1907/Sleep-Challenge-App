@@ -1,20 +1,32 @@
 import { BarChart3 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
+import { Colors } from '../../constants/theme';
+import { useColorScheme } from '../../hooks/use-color-scheme';
 
 export default function AnalyticsScreen() {
+    const colorScheme = useColorScheme() ?? 'light';
+    const isDark = colorScheme === 'dark';
+    const theme = Colors[colorScheme];
+
     return (
-        <View className="flex-1 bg-white items-center justify-center px-8">
-            <View className="bg-purple-50 rounded-full p-6 mb-6">
+        <View className="flex-1 items-center justify-center px-8" style={{ backgroundColor: theme.background }}>
+            <View
+                className="rounded-full p-6 mb-6"
+                style={{ backgroundColor: isDark ? 'rgba(147, 51, 234, 0.1)' : 'rgba(147, 51, 234, 0.05)' }}
+            >
                 <BarChart3 size={48} strokeWidth={1.8} color="#9333ea" />
             </View>
-            <Text className="text-2xl font-bold text-slate-800 mb-3" style={{ fontFamily: 'Manrope_700Bold' }}>
+            <Text className="text-2xl font-bold mb-3" style={{ fontFamily: 'Manrope_700Bold', color: theme.textPrimary }}>
                 Coming Soon
             </Text>
-            <Text className="text-slate-500 text-center leading-relaxed">
+            <Text className="text-center leading-relaxed" style={{ color: theme.textSecondary }}>
                 Analytics is currently under development. Join challenges, compete with friends, and earn rewards for your sleep achievements.
             </Text>
-            <View className="mt-8 bg-slate-50 rounded-xl p-4 w-full">
-                <Text className="text-sm text-slate-600 text-center">
+            <View
+                className="mt-8 rounded-xl p-4 w-full"
+                style={{ backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border }}
+            >
+                <Text className="text-sm text-center" style={{ color: theme.textSecondary }}>
                     Stay tuned for updates! 🚀
                 </Text>
             </View>

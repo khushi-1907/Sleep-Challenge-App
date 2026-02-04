@@ -3,8 +3,10 @@ import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StatusBar,
 import { DeviationChart } from '../../components/DeviationChart';
 import { SleepDurationChart } from '../../components/SleepDurationChart';
 import { SleepTimelineHeader } from '../../components/SleepTimelineHeader';
+import { Colors } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { DashboardDay, getDummyDashboardData } from '../../data/dashboardData';
+import { useColorScheme } from '../../hooks/use-color-scheme';
 import { updateSleepData } from '../../services/sleepDataService';
 
 export default function HomeScreen() {
@@ -52,7 +54,7 @@ export default function HomeScreen() {
                 const [sh, sm] = day.sleepTime.split(':').map(Number);
                 let sleepDate = new Date(day.date);
                 sleepDate.setHours(sh, sm, 0, 0);
-                
+
                 if (wakeDate <= sleepDate) {
                     wakeDate.setDate(wakeDate.getDate() + 1);
                 }
@@ -86,10 +88,10 @@ export default function HomeScreen() {
     }, [data, hasScrolledToToday]);
 
     const formatTargetTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
+        return date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
             minute: '2-digit',
-            hour12: true 
+            hour12: true
         });
     };
 
@@ -162,11 +164,15 @@ export default function HomeScreen() {
         setTimeout(() => { isScrollingDeviation.current = false; }, 50);
     };
 
+    const colorScheme = useColorScheme() ?? 'light';
+    const isDark = colorScheme === 'dark';
+    const theme = Colors[colorScheme];
+
     if (loading) {
         return (
-            <SafeAreaView className="flex-1 bg-white items-center justify-center">
-                <ActivityIndicator size="large" color="#3b82f6" />
-                <Text className="mt-4 text-slate-500" style={{ fontFamily: 'Manrope_500Medium' }}>
+            <SafeAreaView className="flex-1 items-center justify-center" style={{ backgroundColor: theme.background }}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text className="mt-4" style={{ fontFamily: 'Manrope_500Medium', color: theme.textSecondary }}>
                     Loading...
                 </Text>
             </SafeAreaView>
@@ -174,8 +180,8 @@ export default function HomeScreen() {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <StatusBar barStyle="dark-content" />
+        <SafeAreaView className="flex-1" style={{ backgroundColor: theme.background }}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
             <SleepTimelineHeader />
             <ScrollView
                 className="flex-1"
@@ -183,14 +189,17 @@ export default function HomeScreen() {
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        colors={['#3b82f6']}
-                        tintColor="#3b82f6"
+                        onRefresh={loadData}
+                        colors={[theme.primary]}
+                        tintColor={theme.primary}
                     />
                 }
             >
                 <View className="mt-6 px-4 flex-row items-center justify-between mb-2">
-                    <Text className="text-[22px] font-bold tracking-tight text-[#0d161b]" style={{ fontFamily: 'Manrope_800ExtraBold' }}>
+                    <Text
+                        className="text-[22px] font-bold tracking-tight"
+                        style={{ fontFamily: 'Manrope_800ExtraBold', color: theme.textPrimary }}
+                    >
                         Sleep Duration
                     </Text>
                 </View>
@@ -201,12 +210,15 @@ export default function HomeScreen() {
                     onUpdateTime={handleUpdateTime}
                 />
                 <View className="px-4 mt-4">
-                    <Text className="text-[22px] font-bold tracking-tight mb-2 text-[#0d161b]" style={{ fontFamily: 'Manrope_800ExtraBold' }}>
+                    <Text
+                        className="text-[22px] font-bold tracking-tight mb-2"
+                        style={{ fontFamily: 'Manrope_800ExtraBold', color: theme.textPrimary }}
+                    >
                         Wake-Up Deviation
                     </Text>
                     <View className="flex-row items-center gap-2 mb-4">
-                        <Text className="text-slate-500 text-sm font-medium">
-                            Target: <Text className="text-[#0d161b] font-bold" style={{ fontFamily: 'Manrope_700Bold' }}>{formatTargetTime(wakeTarget)}</Text>
+                        <Text className="text-sm font-medium" style={{ color: theme.textSecondary }}>
+                            Target: <Text className="font-bold" style={{ fontFamily: 'Manrope_700Bold', color: theme.textPrimary }}>{formatTargetTime(wakeTarget)}</Text>
                         </Text>
                     </View>
                 </View>

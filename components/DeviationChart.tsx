@@ -3,7 +3,9 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import { Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '../constants/theme';
 import { DashboardDay } from '../data/dashboardData';
+import { useColorScheme } from '../hooks/use-color-scheme';
 import { WebTimePicker } from './WebTimePicker';
 
 const CHART_HEIGHT = 160;
@@ -12,22 +14,24 @@ const CENTER_LINE = CHART_HEIGHT / 2;
 interface DeviationBarProps {
     day: DashboardDay;
     isToday?: boolean;
+    theme: typeof Colors.light;
+    isDark: boolean;
 }
 
-const DeviationBar: React.FC<DeviationBarProps> = ({ day, isToday }) => {
+const DeviationBar: React.FC<DeviationBarProps> = ({ day, isToday, theme, isDark }) => {
     const deviation = day.deviationMinutes;
     const isLate = deviation > 5;
     const isEarly = deviation < -5;
     const isOnTime = Math.abs(deviation) <= 5;
 
     const barHeight = Math.min(Math.abs(deviation) * 2, 60);
-    
+
     // Handle zero deviation case
     const displayHeight = deviation === 0 ? 2 : barHeight;
 
-    // Green for early/on-time, Red for late
-    const barColor = isLate ? '#ef4444' : '#22c55e'; // red-500 : green-500
-    const textColor = isLate ? '#dc2626' : '#16a34a'; // red-600 : green-600
+    // Use theme colors: Primary for Early, Accent for Late
+    const barColor = isLate ? theme.accent : theme.primary;
+    const textColor = isLate ? theme.accent : theme.primary;
 
     return (
         <View className="flex-col items-center w-16 relative h-full">
@@ -36,42 +40,31 @@ const DeviationBar: React.FC<DeviationBarProps> = ({ day, isToday }) => {
                 <View className="absolute inset-x-0 top-0 bottom-[-32px] z-40 overflow-hidden rounded-xl">
                     <BlurView
                         intensity={40}
-                        tint="light"
+                        tint={isDark ? "dark" : "light"}
                         className="absolute inset-0"
                     />
-                    <View className="absolute inset-0 bg-white/40 items-center justify-center">
-                        <Text className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Locked</Text>
+                    <View className="absolute inset-0 items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.4)' }}>
+                        <Text className="text-[8px] font-bold uppercase tracking-tighter" style={{ color: theme.textSecondary }}>Locked</Text>
                     </View>
                 </View>
             )}
 
-            {/* TODAY Badge */}
-            {isToday && (
-                <View className="absolute -top-8 z-30 bg-gradient-to-r from-blue-500 to-blue-600 px-3 py-1 rounded-full shadow-lg">
-                    <Text className="text-[10px] font-bold text-white uppercase tracking-wider" style={{ fontFamily: 'Manrope_700Bold' }}>
-                        Today
-                    </Text>
-                </View>
-            )}
+            {/* Selection Background for Today */}
             {isToday && (
                 <View
-                    className="absolute inset-0 bg-gradient-to-b from-blue-50/50 to-transparent rounded-xl z-0 border border-blue-100/50"
+                    className="absolute inset-0 rounded-xl z-0"
                     style={{
-                        ...(Platform.OS === 'web' ? {
-                            boxShadow: '0 4px 12px rgba(37, 99, 235, 0.15)'
-                        } : {
-                            shadowColor: '#2563eb',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.15,
-                            shadowRadius: 8,
-                            elevation: 4
-                        })
-                    } as any}
+                        backgroundColor: isDark ? 'rgba(30, 41, 59, 0.3)' : 'rgba(241, 245, 249, 0.5)',
+                        borderWidth: 1,
+                        borderColor: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.5)',
+                        bottom: -32,
+                    }}
                 />
             )}
+
             {!day.isFuture && (
                 <View
-                    className={`w-6 ${isLate ? 'rounded-t-lg' : isEarly ? 'rounded-b-lg' : 'rounded-sm'} shadow-lg`}
+                    className={`w-6 ${isLate ? 'rounded-t-lg' : isEarly ? 'rounded-b-lg' : 'rounded-sm'}`}
                     style={{
                         height: displayHeight,
                         backgroundColor: barColor,
@@ -80,30 +73,34 @@ const DeviationBar: React.FC<DeviationBarProps> = ({ day, isToday }) => {
                         left: '50%',
                         marginLeft: -12,
                         zIndex: 1,
-                        ...(Platform.OS === 'web' ? {
-                            boxShadow: `0 4px 12px ${barColor}40`
+                        ...(isDark ? {
+                            shadowColor: barColor,
+                            shadowOffset: { width: 0, height: 0 },
+                            shadowOpacity: 0.5,
+                            shadowRadius: 8,
+                            elevation: 4,
                         } : {
                             shadowColor: barColor,
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 6,
-                            elevation: 4
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 4,
+                            elevation: 2,
                         })
                     } as any}
                 >
-                    {/* Inner glow effect */}
-                    <View className="absolute inset-0 bg-white/20 rounded-lg" />
+                    {/* Inner highlight */}
+                    <View className="absolute inset-0 bg-white/10 rounded-lg" />
                 </View>
             )}
 
             {!day.isFuture && (
                 <View
                     className="absolute w-full items-center"
-                    style={{ top: isLate ? CENTER_LINE - displayHeight - 20 : (isOnTime ? CENTER_LINE + displayHeight + 5 : CENTER_LINE + displayHeight + 5), zIndex: 1 }}
+                    style={{ top: isLate ? CENTER_LINE - displayHeight - 20 : CENTER_LINE + displayHeight + 5, zIndex: 1 }}
                 >
                     <Text
-                        className={`text-[9px] font-bold ${isToday ? 'text-blue-700' : ''}`}
-                        style={{ color: deviation === 0 ? '#94a3b8' : (isToday ? '#1d4ed8' : textColor), fontFamily: 'Manrope_700Bold' }}
+                        className="text-[9px] font-bold"
+                        style={{ color: deviation === 0 ? theme.textSecondary : textColor, fontFamily: 'Manrope_700Bold' }}
                     >
                         {isOnTime && deviation !== 0 ? '±0m' : (deviation === 0 ? '0m' : `${deviation > 0 ? '+' : ''}${deviation}m`)}
                     </Text>
@@ -111,10 +108,22 @@ const DeviationBar: React.FC<DeviationBarProps> = ({ day, isToday }) => {
             )}
 
             <View className="absolute bottom-[-32px] items-center" style={{ opacity: day.isFuture ? 0.4 : 1 }}>
-                <Text className={`text-xs font-bold ${isToday ? 'text-blue-600' : 'text-slate-500'}`} style={{ fontFamily: 'Manrope_700Bold' }}>
-                    {day.dayLabel}
+                <Text
+                    className="text-[10px] font-bold uppercase tracking-wider"
+                    style={{
+                        fontFamily: 'Manrope_700Bold',
+                        color: isToday ? theme.primary : theme.textSecondary
+                    }}
+                >
+                    {day.dayLabel.substring(0, 3)}
                 </Text>
-                <Text className={`text-[9px] font-medium ${isToday ? 'text-blue-500' : 'text-slate-400'}`} style={{ fontFamily: 'Manrope_500Medium' }}>
+                <Text
+                    className="text-[9px] font-medium"
+                    style={{
+                        fontFamily: 'Manrope_500Medium',
+                        color: isDark ? '#64748B' : '#94A3B8'
+                    }}
+                >
                     {day.dateLabel}
                 </Text>
             </View>
@@ -131,15 +140,19 @@ interface DeviationChartProps {
 }
 
 export const DeviationChart: React.FC<DeviationChartProps> = ({ data, onScroll, scrollRef, wakeTarget, onWakeTargetChange }) => {
+    const colorScheme = useColorScheme() ?? 'light';
+    const isDark = colorScheme === 'dark';
+    const theme = Colors[colorScheme];
+
     const [showPicker, setShowPicker] = useState(false);
     const [showWebPicker, setShowWebPicker] = useState(false);
     const [pickerValue, setPickerValue] = useState(wakeTarget);
 
     const formatTargetTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', { 
-            hour: 'numeric', 
+        return date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
             minute: '2-digit',
-            hour12: true 
+            hour12: true
         });
     };
 
@@ -165,43 +178,59 @@ export const DeviationChart: React.FC<DeviationChartProps> = ({ data, onScroll, 
         newTarget.setHours(hours, minutes, 0, 0);
         onWakeTargetChange(newTarget);
     };
+
     return (
-        <View className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 mx-4 mt-6">
+        <View
+            className="rounded-2xl p-4 border mx-4 mt-6"
+            style={{
+                backgroundColor: theme.card,
+                borderColor: theme.border,
+                ...Platform.select({
+                    web: { boxShadow: isDark ? '0 10px 30px -10px rgba(0, 0, 0, 0.5)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)' },
+                    default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 10, elevation: 8 }
+                })
+            }}
+        >
             <View className="flex-row justify-between items-center mb-6">
                 <View className="flex-row justify-center gap-6">
                     <View className="flex-row items-center gap-2">
-                        <View className="w-3 h-3 rounded-full bg-red-500 shadow-sm" />
-                        <Text className="text-xs font-bold text-slate-600 uppercase" style={{ fontFamily: 'Manrope_700Bold' }}>Late</Text>
+                        <View className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
+                        <Text className="text-[10px] font-bold uppercase" style={{ fontFamily: 'Manrope_700Bold', color: theme.textSecondary }}>Late</Text>
                     </View>
                     <View className="flex-row items-center gap-2">
-                        <View className="w-3 h-3 rounded-full bg-green-500 shadow-sm" />
-                        <Text className="text-xs font-bold text-slate-600 uppercase" style={{ fontFamily: 'Manrope_700Bold' }}>Early</Text>
+                        <View className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.primary }} />
+                        <Text className="text-[10px] font-bold uppercase" style={{ fontFamily: 'Manrope_700Bold', color: theme.textSecondary }}>Early</Text>
                     </View>
                 </View>
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={handleTargetPress}
-                    className="bg-orange-50 px-3 py-2 rounded-xl border border-orange-100 flex-row items-center gap-2"
+                    className="px-3 py-2 rounded-xl border flex-row items-center gap-2"
+                    style={{
+                        backgroundColor: isDark ? 'rgba(255, 140, 0, 0.1)' : 'rgba(255, 140, 0, 0.05)',
+                        borderColor: isDark ? 'rgba(255, 140, 0, 0.2)' : 'rgba(255, 140, 0, 0.1)'
+                    }}
                     activeOpacity={0.7}
                 >
-                    <Text className="text-orange-700 text-xs font-bold uppercase tracking-wider" style={{ fontFamily: 'Manrope_700Bold' }}>
+                    <Text
+                        className="text-xs font-bold uppercase tracking-wider"
+                        style={{ fontFamily: 'Manrope_700Bold', color: theme.accent }}
+                    >
                         Target: {formatTargetTime(wakeTarget)}
                     </Text>
-                    <View className="w-3 h-3 items-center justify-center">
-                        <Text className="text-orange-600 text-[10px] leading-none">✎</Text>
-                    </View>
+                    <Text style={{ color: theme.accent, fontSize: 10 }}>✎</Text>
                 </TouchableOpacity>
             </View>
 
             <View className="relative w-full" style={{ height: CHART_HEIGHT }}>
                 {/* Center Line */}
                 <View
-                    className="absolute left-0 right-0 h-px bg-slate-200"
-                    style={{ top: CENTER_LINE }}
+                    className="absolute left-0 right-0 h-px"
+                    style={{ top: CENTER_LINE, backgroundColor: theme.gridLine }}
                 />
 
                 {/* Target Time Label */}
-                <View className="absolute left-0 bg-white px-2 z-10" style={{ top: CENTER_LINE - 6 }}>
-                    <Text className="text-[10px] font-bold text-slate-400" style={{ fontFamily: 'Manrope_700Bold' }}>{formatTargetTime(wakeTarget)}</Text>
+                <View className="absolute left-0 px-2 z-10" style={{ top: CENTER_LINE - 7, backgroundColor: theme.card }}>
+                    <Text className="text-[10px] font-bold" style={{ fontFamily: 'Manrope_700Bold', color: theme.textSecondary }}>{formatTargetTime(wakeTarget)}</Text>
                 </View>
 
                 {/* Chart Container with Gradients */}
@@ -215,22 +244,21 @@ export const DeviationChart: React.FC<DeviationChartProps> = ({ data, onScroll, 
                         className="flex-1"
                     >
                         <View className="flex-row h-full items-center" style={{ minWidth: data.length * 64 }}>{data.map((day) => (
-                            <DeviationBar key={day.id} day={day} isToday={day.isToday} />
+                            <DeviationBar key={day.id} day={day} isToday={day.isToday} theme={theme} isDark={isDark} />
                         ))}</View>
                     </ScrollView>
 
-                    {/* Left Blur/Fade Effect */}
+                    {/* Left/Right Overlays */}
                     <LinearGradient
-                        colors={['rgba(255,255,255,1)', 'rgba(255,255,255,0)']}
+                        colors={[theme.card, 'transparent']}
                         start={{ x: 0, y: 0.5 }}
                         end={{ x: 1, y: 0.5 }}
                         className="absolute left-0 top-0 bottom-0 w-8 z-20"
                         style={{ pointerEvents: 'none' } as any}
                     />
 
-                    {/* Right Blur/Fade Effect */}
                     <LinearGradient
-                        colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
+                        colors={['transparent', theme.card]}
                         start={{ x: 0, y: 0.5 }}
                         end={{ x: 1, y: 0.5 }}
                         className="absolute right-0 top-0 bottom-0 w-8 z-20"

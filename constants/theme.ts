@@ -10,20 +10,44 @@ const tintColorDark = '#fff';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    background: '#F8FAFC',
+    card: '#FFFFFF',
+    textPrimary: '#0F172A',
+    textSecondary: '#64748B',
+    primary: '#00E5FF',
+    accent: '#FF8C00',
+    border: '#E2E8F0',
+    gridLine: '#CBD5E1',
+    barGlow: {
+      shadowColor: '#00E5FF',
+      shadowOpacity: 0,
+    },
+    // Keep these for backward compatibility with existing themed components
+    text: '#0F172A',
+    tint: '#00E5FF',
+    icon: '#64748B',
+    tabIconDefault: '#64748B',
+    tabIconSelected: '#00E5FF',
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    background: '#0F172A',
+    card: '#1E293B',
+    textPrimary: '#F8FAFC',
+    textSecondary: '#94A3B8',
+    primary: '#00E5FF',
+    accent: '#FF8C00',
+    border: '#334155',
+    gridLine: '#334155',
+    barGlow: {
+      shadowColor: '#00E5FF',
+      shadowOpacity: 0.5,
+    },
+    // Keep these for backward compatibility with existing themed components
+    text: '#F8FAFC',
+    tint: '#00E5FF',
+    icon: '#94A3B8',
+    tabIconDefault: '#94A3B8',
+    tabIconSelected: '#00E5FF',
   },
 };
 

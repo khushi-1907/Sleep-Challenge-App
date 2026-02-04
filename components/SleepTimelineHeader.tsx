@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { Moon, Sun } from 'lucide-react-native';
 import React from 'react';
 import { Alert, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Colors } from '../constants/theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SleepTimelineHeaderProps {
     title?: string;
@@ -10,6 +13,8 @@ interface SleepTimelineHeaderProps {
 
 export const SleepTimelineHeader: React.FC<SleepTimelineHeaderProps> = ({ title = "Sleep Timeline" }) => {
     const { logout } = useAuth();
+    const { theme, toggleTheme, isDark } = useTheme();
+    const currentTheme = Colors[theme];
 
     const handleLogout = async () => {
         Alert.alert(
@@ -32,24 +37,44 @@ export const SleepTimelineHeader: React.FC<SleepTimelineHeaderProps> = ({ title 
     };
 
     const HeaderContent = (
-        <View className="px-4 py-3 flex-row items-center justify-between border-b border-slate-100 bg-white/80">
-            <View className="w-10" />
-            <Text className="text-lg font-bold tracking-tight text-[#0d161b]" style={{ fontFamily: 'Manrope_800ExtraBold' }}>
+        <View
+            className="px-4 py-3 flex-row items-center justify-between border-b"
+            style={{
+                backgroundColor: currentTheme.background + 'CC', // 80% opacity
+                borderBottomColor: currentTheme.border
+            }}
+        >
+            <View className="flex-row items-center">
+                <TouchableOpacity onPress={toggleTheme} className="p-2">
+                    {isDark ? (
+                        <Sun size={22} color={currentTheme.textPrimary} />
+                    ) : (
+                        <Moon size={22} color={currentTheme.textPrimary} />
+                    )}
+                </TouchableOpacity>
+            </View>
+            <Text
+                className="text-lg font-bold tracking-tight"
+                style={{
+                    fontFamily: 'Manrope_800ExtraBold',
+                    color: currentTheme.textPrimary
+                }}
+            >
                 {title}
             </Text>
             <TouchableOpacity onPress={handleLogout} className="p-2">
-                <Ionicons name="log-out-outline" size={24} color="#0d161b" />
+                <Ionicons name="log-out-outline" size={24} color={currentTheme.textPrimary} />
             </TouchableOpacity>
         </View>
     );
 
     if (Platform.OS === 'ios') {
         return (
-            <BlurView intensity={80} tint="light" className="sticky top-0 z-50">{HeaderContent}</BlurView>
+            <BlurView intensity={80} tint={isDark ? "dark" : "light"} className="sticky top-0 z-50">{HeaderContent}</BlurView>
         );
     }
 
     return (
-        <View className="bg-white/80 sticky top-0 z-50">{HeaderContent}</View>
+        <View className="sticky top-0 z-50" style={{ backgroundColor: currentTheme.background }}>{HeaderContent}</View>
     );
 };
