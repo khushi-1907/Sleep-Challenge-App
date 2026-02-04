@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StatusBar, Text, View } from 'react-native';
 import { DeviationChart } from '../../components/DeviationChart';
 import { SleepDurationChart } from '../../components/SleepDurationChart';
+import { SleepTimeEditor } from '../../components/SleepTimeEditor';
 import { SleepTimelineHeader } from '../../components/SleepTimelineHeader';
 import { Colors } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,6 +15,11 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [hasScrolledToToday, setHasScrolledToToday] = useState(false);
+
+    // Bottom Sheet State
+    const [showEditSheet, setShowEditSheet] = useState(false);
+    const [selectedDayForEdit, setSelectedDayForEdit] = useState<DashboardDay | null>(null);
+
     const [wakeTarget, setWakeTarget] = useState<Date>(() => {
         const today = new Date();
         today.setHours(5, 0, 0, 0);
@@ -30,7 +36,7 @@ export default function HomeScreen() {
         try {
             if (!silent) setLoading(true);
             setData(getDummyDashboardData());
-        } catch (error) {
+        } catch {
             setData(getDummyDashboardData());
         } finally {
             setLoading(false);
@@ -95,52 +101,58 @@ export default function HomeScreen() {
         });
     };
 
-    const handleUpdateTime = async (dayId: string, type: 'sleep' | 'wake', time: string) => {
+    const handleBarPress = (day: DashboardDay) => {
+        setSelectedDayForEdit(day);
+        setShowEditSheet(true);
+    };
+
+    const handleSaveSleepTimes = (dayId: string, sleepTime: string, wakeTime: string) => {
         if (!user) return;
 
-        try {
-            const day = data.find(d => d.id === dayId);
-            if (!day) return;
-
-            const sleepTime = type === 'sleep' ? time : day.sleepTime;
-            const wakeTime = type === 'wake' ? time : day.wakeTime;
-
-            // Optimistic update
-            const oldData = [...data];
-            const newData = data.map(d => {
-                if (d.id === dayId) {
-                    const [sh, sm] = sleepTime.split(':').map(Number);
-                    const [wh, wm] = wakeTime.split(':').map(Number);
-
-                    let sleepDate = new Date();
-                    sleepDate.setHours(sh, sm, 0, 0);
-                    let wakeDate = new Date();
-                    wakeDate.setHours(wh, wm, 0, 0);
-
-                    if (wakeDate <= sleepDate) {
-                        wakeDate.setDate(wakeDate.getDate() + 1);
-                    }
-
-                    const sleepMinutes = Math.round((wakeDate.getTime() - sleepDate.getTime()) / (1000 * 60));
-                    const targetWakeDate = new Date(wakeDate);
-                    targetWakeDate.setHours(wakeTarget.getHours(), wakeTarget.getMinutes(), 0, 0);
-                    const deviationMinutes = Math.round((wakeDate.getTime() - targetWakeDate.getTime()) / (1000 * 60));
-
-                    return { ...d, sleepTime, wakeTime, sleepMinutes, deviationMinutes };
+        // Optimistic update
+        const oldData = [...data];
+        const newData = data.map(d => {
+            if (d.id === dayId) {
+                // Calculate new sleep duration
+                const [sh, sm] = sleepTime.split(':').map(Number);
+                const [wh, wm] = wakeTime.split(':').map(Number);
+                
+                let sleepDate = new Date(d.date);
+                sleepDate.setHours(sh, sm, 0, 0);
+                
+                let wakeDate = new Date(d.date);
+                wakeDate.setHours(wh, wm, 0, 0);
+                
+                // Handle next-day wake times
+                if (wakeDate <= sleepDate) {
+                    wakeDate.setDate(wakeDate.getDate() + 1);
                 }
-                return d;
-            });
-            setData(newData);
-
-            const result = await updateSleepData(user.uid, dayId, sleepTime, wakeTime);
-
-            if (!result.success) {
-                setData(oldData);
-            } else {
-                setTimeout(() => loadData(true), 1000);
+                
+                const sleepMinutes = Math.round((wakeDate.getTime() - sleepDate.getTime()) / (1000 * 60));
+                
+                // Calculate new deviation
+                const targetWakeDate = new Date(wakeDate);
+                targetWakeDate.setHours(wakeTarget.getHours(), wakeTarget.getMinutes(), 0, 0);
+                const deviationMinutes = Math.round((wakeDate.getTime() - targetWakeDate.getTime()) / (1000 * 60));
+                
+                return { 
+                    ...d, 
+                    sleepTime, 
+                    wakeTime, 
+                    sleepMinutes,
+                    deviationMinutes 
+                };
             }
-        } catch (error) {
-        }
+            return d;
+        });
+        
+        setData(newData);
+        
+        // Update in background (fire and forget)
+        updateSleepData(user.uid, dayId, sleepTime, wakeTime).catch(() => {
+            // Revert on error
+            setData(oldData);
+        });
     };
 
     const handleRefresh = () => {
@@ -189,7 +201,7 @@ export default function HomeScreen() {
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
-                        onRefresh={loadData}
+                        onRefresh={handleRefresh}
                         colors={[theme.primary]}
                         tintColor={theme.primary}
                     />
@@ -207,7 +219,7 @@ export default function HomeScreen() {
                     data={data}
                     scrollRef={timelineScrollRef}
                     onScroll={handleTimelineScroll}
-                    onUpdateTime={handleUpdateTime}
+                    onBarPress={handleBarPress}
                 />
                 <View className="px-4 mt-4">
                     <Text
@@ -231,6 +243,13 @@ export default function HomeScreen() {
                 />
                 <View className="h-20" />
             </ScrollView>
+
+            <SleepTimeEditor
+                visible={showEditSheet}
+                day={selectedDayForEdit}
+                onClose={() => setShowEditSheet(false)}
+                onSave={handleSaveSleepTimes}
+            />
         </SafeAreaView>
     );
 }

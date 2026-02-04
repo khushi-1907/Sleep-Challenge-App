@@ -1,13 +1,11 @@
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MoonStar } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React from 'react';
 import { Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../constants/theme';
 import { DashboardDay } from '../data/dashboardData';
 import { useColorScheme } from '../hooks/use-color-scheme';
-import { WebTimePicker } from './WebTimePicker';
 
 const CHART_HEIGHT = 320;
 const WINDOW_START_HOUR = 18; // 6 PM
@@ -152,49 +150,13 @@ interface SleepDurationChartProps {
     data: DashboardDay[];
     onScroll?: (offset: number) => void;
     scrollRef?: React.RefObject<ScrollView | null>;
-    onUpdateTime?: (dayId: string, type: 'sleep' | 'wake', time: string) => void;
+    onBarPress?: (day: DashboardDay) => void;
 }
 
-export const SleepDurationChart: React.FC<SleepDurationChartProps> = ({ data, onScroll, scrollRef, onUpdateTime }) => {
+export const SleepDurationChart: React.FC<SleepDurationChartProps> = ({ data, onScroll, scrollRef, onBarPress }) => {
     const colorScheme = useColorScheme() ?? 'light';
     const isDark = colorScheme === 'dark';
     const theme = Colors[colorScheme];
-
-    const [showPicker, setShowPicker] = useState(false);
-    const [showWebPicker, setShowWebPicker] = useState(false);
-    const [editingDayId, setEditingDayId] = useState<string | null>(null);
-    const [editingType, setEditingType] = useState<'sleep' | 'wake'>('wake');
-    const [pickerValue, setPickerValue] = useState(new Date());
-
-    const handleBarPress = (day: DashboardDay) => {
-        setEditingDayId(day.id);
-        setEditingType('wake');
-        const [h, m] = day.wakeTime.split(':').map(Number);
-        const date = new Date();
-        date.setHours(h, m);
-        setPickerValue(date);
-
-        if (Platform.OS === 'web') {
-            setShowWebPicker(true);
-        } else {
-            setShowPicker(true);
-        }
-    };
-
-    const onPickerChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-        setShowPicker(Platform.OS === 'ios');
-        if (selectedDate && editingDayId) {
-            const hours = selectedDate.getHours().toString().padStart(2, '0');
-            const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-            onUpdateTime?.(editingDayId, editingType, `${hours}:${minutes}`);
-        }
-    };
-
-    const onWebTimeChange = (timeString: string) => {
-        if (editingDayId) {
-            onUpdateTime?.(editingDayId, editingType, timeString);
-        }
-    };
 
     return (
         <View
@@ -256,7 +218,7 @@ export const SleepDurationChart: React.FC<SleepDurationChartProps> = ({ data, on
                                     key={day.id}
                                     day={day}
                                     isToday={day.isToday}
-                                    onPress={() => handleBarPress(day)}
+                                    onPress={() => onBarPress?.(day)}
                                     theme={theme}
                                     isDark={isDark}
                                 />
@@ -282,22 +244,6 @@ export const SleepDurationChart: React.FC<SleepDurationChartProps> = ({ data, on
                     />
                 </View>
             </View>
-
-            {showPicker && Platform.OS !== 'web' && (
-                <DateTimePicker
-                    value={pickerValue}
-                    mode="time"
-                    is24Hour={true}
-                    display="default"
-                    onChange={onPickerChange}
-                />
-            )}
-            <WebTimePicker
-                visible={showWebPicker}
-                value={pickerValue}
-                onChange={onWebTimeChange}
-                onClose={() => setShowWebPicker(false)}
-            />
         </View>
     );
 };
