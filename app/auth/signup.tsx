@@ -1,8 +1,15 @@
 import { useRouter } from 'expo-router';
 import { BedDouble } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+
+const DARK_BG = '#0F172A';
+const DARK_CARD = '#1E293B';
+const DARK_TEXT_PRIMARY = '#F8FAFC';
+const DARK_TEXT_SECONDARY = '#94A3B8';
+const DARK_BORDER = '#334155';
+const PRIMARY = '#00E5FF';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -44,23 +51,18 @@ export default function SignupScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView className="flex-1" style={{ backgroundColor: DARK_BG }}>
+      <StatusBar barStyle="light-content" />
       <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="mt-20 mb-12">
-          <View className="bg-gradient-to-br from-green-50 to-green-100 w-24 h-24 rounded-3xl items-center justify-center mb-6" style={{
-            ...Platform.select({
-              web: { boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' },
-              default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 8 }
-            })
-          }}>
-            <BedDouble size={32} strokeWidth={1.8} color="#0D161B" />
+          <View className="w-24 h-24 rounded-3xl items-center justify-center mb-6" style={{ backgroundColor: DARK_CARD }}>
+            <BedDouble size={32} strokeWidth={1.8} color={PRIMARY} />
           </View>
-          <Text className="text-3xl font-bold text-slate-900 mb-2" style={{ fontFamily: 'Manrope_800ExtraBold' }}>
+          <Text className="text-3xl font-bold mb-2" style={{ fontFamily: 'Manrope_800ExtraBold', color: DARK_TEXT_PRIMARY }}>
             Create Account
           </Text>
-          <Text className="text-slate-500 text-lg" style={{ fontFamily: 'Manrope_500Medium' }}>
+          <Text className="text-lg" style={{ fontFamily: 'Manrope_500Medium', color: DARK_TEXT_SECONDARY }}>
             Start your sleep tracking journey today
           </Text>
         </View>
@@ -68,12 +70,14 @@ export default function SignupScreen() {
         {/* Form */}
         <View className="space-y-4">
           <View>
-            <Text className="text-slate-700 font-medium mb-2" style={{ fontFamily: 'Manrope_600SemiBold' }}>
+            <Text className="font-medium mb-2" style={{ fontFamily: 'Manrope_600SemiBold', color: DARK_TEXT_SECONDARY }}>
               Email
             </Text>
             <TextInput
-              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-slate-900"
+              className="rounded-xl px-4 py-4"
+              style={{ backgroundColor: DARK_CARD, borderColor: DARK_BORDER, borderWidth: 1, color: DARK_TEXT_PRIMARY }}
               placeholder="Enter your email"
+              placeholderTextColor={DARK_TEXT_SECONDARY}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -83,12 +87,14 @@ export default function SignupScreen() {
           </View>
 
           <View>
-            <Text className="text-slate-700 font-medium mb-2" style={{ fontFamily: 'Manrope_600SemiBold' }}>
+            <Text className="font-medium mb-2" style={{ fontFamily: 'Manrope_600SemiBold', color: DARK_TEXT_SECONDARY }}>
               Password
             </Text>
             <TextInput
-              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-slate-900"
+              className="rounded-xl px-4 py-4"
+              style={{ backgroundColor: DARK_CARD, borderColor: DARK_BORDER, borderWidth: 1, color: DARK_TEXT_PRIMARY }}
               placeholder="Enter your password (min 6 chars)"
+              placeholderTextColor={DARK_TEXT_SECONDARY}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -96,12 +102,14 @@ export default function SignupScreen() {
           </View>
 
           <View>
-            <Text className="text-slate-700 font-medium mb-2" style={{ fontFamily: 'Manrope_600SemiBold' }}>
+            <Text className="font-medium mb-2" style={{ fontFamily: 'Manrope_600SemiBold', color: DARK_TEXT_SECONDARY }}>
               Confirm Password
             </Text>
             <TextInput
-              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-slate-900"
+              className="rounded-xl px-4 py-4"
+              style={{ backgroundColor: DARK_CARD, borderColor: DARK_BORDER, borderWidth: 1, color: DARK_TEXT_PRIMARY }}
               placeholder="Confirm your password"
+              placeholderTextColor={DARK_TEXT_SECONDARY}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
@@ -113,26 +121,21 @@ export default function SignupScreen() {
         <TouchableOpacity
           onPress={handleSignup}
           disabled={loading}
-          className={`mt-8 rounded-xl py-4 ${loading ? 'bg-slate-300' : 'bg-gradient-to-r from-green-500 to-green-600'}`}
-          style={{
-            ...Platform.select({
-              web: { boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' },
-              default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 6, elevation: 8 }
-            })
-          }}
+          className="mt-8 rounded-xl py-4"
+          style={{ backgroundColor: loading ? '#475569' : PRIMARY }}
         >
-          <Text className="text-white font-bold text-center text-lg" style={{ fontFamily: 'Manrope_700Bold' }}>
+          <Text className="font-bold text-center text-lg" style={{ fontFamily: 'Manrope_700Bold', color: '#0F172A' }}>
             {loading ? 'Creating Account...' : 'Create Account'}
           </Text>
         </TouchableOpacity>
 
         {/* Login Link */}
         <View className="flex-row justify-center mt-8">
-          <Text className="text-slate-500" style={{ fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ fontFamily: 'Manrope_500Medium', color: DARK_TEXT_SECONDARY }}>
             Already have an account?{' '}
           </Text>
           <TouchableOpacity onPress={() => router.push('/auth/login')}>
-            <Text className="text-blue-600 font-bold" style={{ fontFamily: 'Manrope_700Bold' }}>
+            <Text className="font-bold" style={{ fontFamily: 'Manrope_700Bold', color: PRIMARY }}>
               Sign In
             </Text>
           </TouchableOpacity>

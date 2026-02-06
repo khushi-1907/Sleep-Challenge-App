@@ -12,9 +12,11 @@ export interface DashboardDay {
   isFuture: boolean;
 }
 
-// Helper function to format time as HH:mm
+// Helper function to format time as HH:mm (local time)
 export const formatTimeHHmm = (date: Date): string => {
-  return date.toISOString().slice(11, 16);
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
 };
 
 // Helper function to get day label

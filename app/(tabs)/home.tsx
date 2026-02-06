@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StatusBar, Text, View } from 'react-native';
 import { DeviationChart } from '../../components/DeviationChart';
 import { SleepDurationChart } from '../../components/SleepDurationChart';
-import { SleepTimeEditor } from '../../components/SleepTimeEditor';
 import { SleepTimelineHeader } from '../../components/SleepTimelineHeader';
 import { Colors } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,10 +14,6 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [hasScrolledToToday, setHasScrolledToToday] = useState(false);
-
-    // Bottom Sheet State
-    const [showEditSheet, setShowEditSheet] = useState(false);
-    const [selectedDayForEdit, setSelectedDayForEdit] = useState<DashboardDay | null>(null);
 
     const [wakeTarget, setWakeTarget] = useState<Date>(() => {
         const today = new Date();
@@ -36,7 +31,7 @@ export default function HomeScreen() {
         try {
             if (!silent) setLoading(true);
             setData(getDummyDashboardData());
-        } catch {
+        } catch (error) {
             setData(getDummyDashboardData());
         } finally {
             setLoading(false);
@@ -81,12 +76,9 @@ export default function HomeScreen() {
             const todayIndex = data.findIndex(d => d.isToday);
             if (todayIndex !== -1) {
                 setTimeout(() => {
-                    const todayOffset = todayIndex * 60;
+                    const todayOffset = todayIndex * 45;
                     timelineScrollRef.current?.scrollTo({ x: todayOffset - 150, animated: false });
-
-                    const deviationOffset = todayIndex * 64;
-                    deviationScrollRef.current?.scrollTo({ x: deviationOffset - 150, animated: false });
-
+                    deviationScrollRef.current?.scrollTo({ x: todayOffset - 150, animated: false });
                     setHasScrolledToToday(true);
                 }, 100);
             }
@@ -101,58 +93,65 @@ export default function HomeScreen() {
         });
     };
 
-    const handleBarPress = (day: DashboardDay) => {
-        setSelectedDayForEdit(day);
-        setShowEditSheet(true);
-    };
-
-    const handleSaveSleepTimes = (dayId: string, sleepTime: string, wakeTime: string) => {
+    const handleUpdateDay = async (dayId: string, sleepTime: string, wakeTime: string) => {
         if (!user) return;
 
-        // Optimistic update
-        const oldData = [...data];
-        const newData = data.map(d => {
-            if (d.id === dayId) {
-                // Calculate new sleep duration
-                const [sh, sm] = sleepTime.split(':').map(Number);
-                const [wh, wm] = wakeTime.split(':').map(Number);
-                
-                let sleepDate = new Date(d.date);
-                sleepDate.setHours(sh, sm, 0, 0);
-                
-                let wakeDate = new Date(d.date);
-                wakeDate.setHours(wh, wm, 0, 0);
-                
-                // Handle next-day wake times
-                if (wakeDate <= sleepDate) {
-                    wakeDate.setDate(wakeDate.getDate() + 1);
+        try {
+            // Optimistic update
+            const oldData = [...data];
+            const newData = data.map(d => {
+                if (d.id === dayId) {
+                    // Recalculate sleep minutes and deviation
+                    const [sh, sm] = sleepTime.split(':').map(Number);
+                    const [wh, wm] = wakeTime.split(':').map(Number);
+                    
+                    let sleepDate = new Date(d.date);
+                    sleepDate.setHours(sh, sm, 0, 0);
+                    
+                    let wakeDate = new Date(d.date);
+                    wakeDate.setHours(wh, wm, 0, 0);
+                    
+                    // Handle sleep crossing midnight
+                    if (wakeDate <= sleepDate) {
+                        wakeDate.setDate(wakeDate.getDate() + 1);
+                    }
+                    
+                    const sleepMinutes = Math.round((wakeDate.getTime() - sleepDate.getTime()) / (1000 * 60));
+                    
+                    // Calculate deviation from target wake time
+                    const targetWakeDate = new Date(wakeDate);
+                    targetWakeDate.setHours(wakeTarget.getHours(), wakeTarget.getMinutes(), 0, 0);
+                    const deviationMinutes = Math.round((wakeDate.getTime() - targetWakeDate.getTime()) / (1000 * 60));
+                    
+                    return {
+                        ...d,
+                        sleepTime,
+                        wakeTime,
+                        sleepMinutes,
+                        deviationMinutes
+                    };
                 }
-                
-                const sleepMinutes = Math.round((wakeDate.getTime() - sleepDate.getTime()) / (1000 * 60));
-                
-                // Calculate new deviation
-                const targetWakeDate = new Date(wakeDate);
-                targetWakeDate.setHours(wakeTarget.getHours(), wakeTarget.getMinutes(), 0, 0);
-                const deviationMinutes = Math.round((wakeDate.getTime() - targetWakeDate.getTime()) / (1000 * 60));
-                
-                return { 
-                    ...d, 
-                    sleepTime, 
-                    wakeTime, 
-                    sleepMinutes,
-                    deviationMinutes 
-                };
+                return d;
+            });
+            
+            setData(newData);
+
+            const result = await updateSleepData(
+                user.uid,
+                dayId,
+                sleepTime,
+                wakeTime
+            );
+
+            if (!result.success) {
+                setData(oldData);
+            } else {
+                // Optionally reload data after a small delay to ensure server sync
+                setTimeout(() => loadData(true), 1000);
             }
-            return d;
-        });
-        
-        setData(newData);
-        
-        // Update in background (fire and forget)
-        updateSleepData(user.uid, dayId, sleepTime, wakeTime).catch(() => {
-            // Revert on error
-            setData(oldData);
-        });
+        } catch (error) {
+            console.error('Failed to update sleep data:', error);
+        }
     };
 
     const handleRefresh = () => {
@@ -163,16 +162,14 @@ export default function HomeScreen() {
     const handleTimelineScroll = (offset: number) => {
         if (isScrollingDeviation.current) return;
         isScrollingTimeline.current = true;
-        const ratio = 64 / 60;
-        deviationScrollRef.current?.scrollTo({ x: offset * ratio, animated: false });
+        deviationScrollRef.current?.scrollTo({ x: offset, animated: false });
         setTimeout(() => { isScrollingTimeline.current = false; }, 50);
     };
 
     const handleDeviationScroll = (offset: number) => {
         if (isScrollingTimeline.current) return;
         isScrollingDeviation.current = true;
-        const ratio = 60 / 64;
-        timelineScrollRef.current?.scrollTo({ x: offset * ratio, animated: false });
+        timelineScrollRef.current?.scrollTo({ x: offset, animated: false });
         setTimeout(() => { isScrollingDeviation.current = false; }, 50);
     };
 
@@ -201,7 +198,7 @@ export default function HomeScreen() {
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
-                        onRefresh={handleRefresh}
+                        onRefresh={loadData}
                         colors={[theme.primary]}
                         tintColor={theme.primary}
                     />
@@ -219,7 +216,7 @@ export default function HomeScreen() {
                     data={data}
                     scrollRef={timelineScrollRef}
                     onScroll={handleTimelineScroll}
-                    onBarPress={handleBarPress}
+                    onUpdateDay={handleUpdateDay}
                 />
                 <View className="px-4 mt-4">
                     <Text
@@ -243,13 +240,6 @@ export default function HomeScreen() {
                 />
                 <View className="h-20" />
             </ScrollView>
-
-            <SleepTimeEditor
-                visible={showEditSheet}
-                day={selectedDayForEdit}
-                onClose={() => setShowEditSheet(false)}
-                onSave={handleSaveSleepTimes}
-            />
         </SafeAreaView>
     );
 }

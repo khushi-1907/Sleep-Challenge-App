@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface WebTimePickerProps {
@@ -11,6 +11,12 @@ interface WebTimePickerProps {
 export const WebTimePicker: React.FC<WebTimePickerProps> = ({ value, onChange, onClose, visible }) => {
     const [hours, setHours] = useState(value.getHours().toString().padStart(2, '0'));
     const [minutes, setMinutes] = useState(value.getMinutes().toString().padStart(2, '0'));
+
+    // Update state when value prop changes (e.g., when switching between sleep and wake time)
+    useEffect(() => {
+        setHours(value.getHours().toString().padStart(2, '0'));
+        setMinutes(value.getMinutes().toString().padStart(2, '0'));
+    }, [value]);
 
     const handleConfirm = () => {
         onChange(`${hours}:${minutes}`);
@@ -108,11 +114,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 24,
         width: 280,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 8,
+        boxShadow: '0px 4px 8px rgba(0,0,0,0.25)',
     },
     title: {
         fontSize: 18,

@@ -205,11 +205,7 @@ export const SleepLogBottomSheet: React.FC<SleepLogBottomSheetProps> = ({ visibl
                                                 left: `${(sleepMins / WINDOW_MINUTES) * 100}%`,
                                                 width: `${((wakeMins - sleepMins) / WINDOW_MINUTES) * 100}%`,
                                                 backgroundColor: theme.primary,
-                                                shadowColor: theme.primary,
-                                                shadowOffset: { width: 0, height: 4 },
-                                                shadowOpacity: 0.5,
-                                                shadowRadius: 10,
-                                                elevation: 8,
+                                                boxShadow: `0px 4px 10px ${theme.primary}80`, // 50% opacity
                                                 borderWidth: 1,
                                                 borderColor: 'rgba(255,255,255,0.2)'
                                             }}
@@ -240,11 +236,10 @@ export const SleepLogBottomSheet: React.FC<SleepLogBottomSheetProps> = ({ visibl
                                     </View>
                                 </View>
                             </View>
-                        </View>
 
-                        {/* Adjust Controls */}
-                        <View className="flex-row gap-4 mb-10">
-                            {/* Bedtime Card */}
+                            {/* Adjust Controls */}
+                            <View className="flex-row gap-4 mb-10">
+                                {/* Bedtime Card */}
                             <TouchableOpacity
                                 onPress={() => openPicker('sleep')}
                                 className="flex-1 p-4 rounded-2xl border items-center justify-center gap-3"
@@ -304,8 +299,8 @@ export const SleepLogBottomSheet: React.FC<SleepLogBottomSheetProps> = ({ visibl
                                 colors={[theme.primary, '#00C2FF']}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
-                                className="w-full py-4 rounded-2xl items-center shadow-lg"
-                                style={{ shadowColor: theme.primary }}
+                                className="w-full py-4 rounded-2xl items-center"
+                                style={{ boxShadow: `0px 4px 10px ${theme.primary}66` }} // 40% opacity
                             >
                                 <Text className="text-white font-bold text-lg">Apply Changes</Text>
                             </LinearGradient>
